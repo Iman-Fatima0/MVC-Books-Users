@@ -6,7 +6,15 @@ const BooksSchema=new Schema({
     genre:String,
     Publication_Year:Number,
     Pages:Number,
-    Read:Boolean
+    Read:Boolean,
+    createAt:{
+        type:Date,
+        default:Date.now(),
+    },
+    updateAt:{
+        type:Date,
+        default:Date.now(),
+    }
 })
 
 const Books=mongoose.model('Books',BooksSchema);

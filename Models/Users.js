@@ -8,7 +8,15 @@ const UsersSchema = new Schema({
     Age: Number,
     gender: String,
     Address: String,
-    is_Reader: Boolean
+    is_Reader: Boolean,
+    createAt:{
+        type:Date,
+        default:Date.now(),
+    },
+    updateAt:{
+        type:Date,
+        default:Date.now(),
+    }
 });
 
 const User = mongoose.model('User', UsersSchema); 
