@@ -1,11 +1,12 @@
 const express=require('express')
 const mongoose=require('mongoose')
+const dotenv=require('dotenv').config()
 const app=express()
 
 const booksRouter=require('./Router/Books')
 const usersRouter=require('./Router/Users')
 
-mongoose.connect('mongodb://localhost:27017/mvc')
+mongoose.connect(process.env.MONGO_URL)
 
 .then(()=>console.log('mongodb connected'))
 .catch((err)=>console.log(err))

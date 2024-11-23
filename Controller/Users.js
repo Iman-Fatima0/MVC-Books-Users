@@ -2,7 +2,8 @@ const User = require('../Models/Users');
 const addUser = async (req, res) => {
     try {
         const data = req.body;
-        res.json({ "message": "User created successfully", data });
+        const user_Creation= await User.create(data);
+        res.json({ "message": "User created successfully", user_Creation });
     } catch (error) {
         console.log(error);
         res.status(500).send("Error creating Users");
@@ -21,7 +22,7 @@ const getUsers = async (req, res) => {
 const searchUsers = async (req, res) => {
     try {
         const id = req.params.id;
-        const findUsers = await User.findById(id);
+        const findUsers = await User.findById(id).populate('bookId');
         res.json({ "message": "User found successfully", findUsers }); 
     } catch (error) {
         console.log(error);
