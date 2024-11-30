@@ -95,7 +95,8 @@ const borrowBook = async (req, res) => {
         borrowedBooks: user.bookId,
       },
     });
-  } catch (error) {
+  }
+   catch (error) {
     console.error('Error borrowing book:', error);
     res.status(500).json({ message: 'An error occurred while borrowing the book.', error });
   }
@@ -118,7 +119,8 @@ const returnBook = async (req, res) => {
           borrowedBooks: user.bookId,
         },
       });
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error returning book:', error);
       res.status(500).json({ message: 'An error occurred while returning the book.', error });
     }
