@@ -1,8 +1,16 @@
 const User = require('../Models/Users'); 
+const jwt=require('jsonwebtoken'); 
+const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+
 const addUser = async (req, res) => {
     try {
         const data = req.body;
         const user_Creation= await User.create(data);
+        const salt=10;
+        const hashedPassword=await bcrypt.hash(data.Password, salt);
+        user_Creation.Password=hashedPassword;
+        user_Creation.save();
         res.json({ "message": "User created successfully", user_Creation });
     } catch (error) {
         console.log(error);
@@ -52,11 +60,67 @@ const DeleteUser = async (req, res) => {
         res.status(500).send("Error Deleting Users");
     }
 };
+const login=async (req, res) => {
 
+    try{
+    const user=await User.findOne({email:req.body.email});
+
+    if(user)
+       {
+        const data=req.body;
+           const validate=await bcrypt.compare(data.password==User.password);
+           if(validate)
+           {
+            console.log("Successfully logged in")
+            res.status(200).send({message: "Successfully logged in"});
+           }
+           else{
+            console.log("Incorrect password")
+            res.status(401).send({message:"Invalid password"})
+           }
+       }
+
+    }
+    catch(error)
+    {
+        console.log(error)
+        res.status(500).send("Error logging in");
+    
+       }
+    }
+    const borrowBook = async (req, res) => {
+        try {
+            const { userid, bookid } = req.params;
+    
+    
+            const user = await User.findById(userid);
+    
+            if (user.bookId.length >= 3) {
+                return res.status(400).json({ message: "Can't borrow any more books" });
+            }
+            const bookBorrowed = await User.findByIdAndUpdate(
+                userid,
+                { $push: { bookId: bookid } },
+                { new: true }
+            ).populate('bookId');
+    
+            res.status(200).json({
+                message: "Book Borrowed Successfully",
+                bookBorrowed
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).send("Error borrowing book");
+        }
+    };
+    
+    
 module.exports = {
     addUser,
     getUsers,
     searchUsers,
     updateUser,
-    DeleteUser
+    DeleteUser,
+    borrowBook,
+    login
 };
