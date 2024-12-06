@@ -68,7 +68,11 @@ const login=async (req, res) => {
     if(user)
        {
         const data=req.body;
-           const validate=await bcrypt.compare(data.password==User.password);
+           const validate=await bcrypt.compare(data.password,User.password);
+           const token=jwt.sign(
+            {
+                id:User._id, emial:User.email},process.env.JWT_SECRET,{algorithm:'HS256'}
+           )
            if(validate)
            {
             console.log("Successfully logged in")
@@ -95,14 +99,14 @@ const login=async (req, res) => {
     
             const user = await User.findById(userid);
     
-            if (user.bookId.length >= 3) {
-                return res.status(400).json({ message: "Can't borrow any more books" });
-            }
+            // if (user.bookId.length >= 3) {
+            //     return res.status(400).json({ message: "Can't borrow any more books" });
+            // }
             const bookBorrowed = await User.findByIdAndUpdate(
                 userid,
                 { $push: { bookId: bookid } },
                 { new: true }
-            ).populate('bookId');
+            );
     
             res.status(200).json({
                 message: "Book Borrowed Successfully",
@@ -113,7 +117,40 @@ const login=async (req, res) => {
             res.status(500).send("Error borrowing book");
         }
     };
-    
+    const returnbook = async (req, res) => {
+        try{
+                const { userid, bookid } = req.params;
+                const returned = await User.findByIdAndUpdate(
+                    userid,
+                    { $pull: { bookId: bookid } },
+                    { new: true }
+                );
+                // const returned=await User.bookid.splice(bookid,1);
+                res.status(200).json({
+                    message: "Book Returned Successfully",
+                    returned
+                });
+        }
+        catch(error)
+        {
+          console.error(error);
+          res.status(500).send("Error returning book");
+        }
+    }
+
+    const borrowed=async(req,res)=>
+    {
+         try{
+            const data=req.params.userid;
+             const borrowed=await User.findById(data).populate('bookId');
+             res.status(200).json({message: "Borrowed books", borrowed});
+         }
+         catch(error)
+         {
+             console.error(error);
+             res.status(500).send("Error fetching borrowed books");
+         }
+    }
     
 module.exports = {
     addUser,
@@ -122,5 +159,8 @@ module.exports = {
     updateUser,
     DeleteUser,
     borrowBook,
-    login
+    login,
+    returnbook,
+    borrowed
 };
+//using $push to add and $pull to remove also new is used to update
