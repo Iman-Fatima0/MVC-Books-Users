@@ -19,6 +19,12 @@ const addUser = async (req, res) => {
 };
 const getUsers = async (req, res) => {
     try {
+        
+        console.log("request from postman", req.headers.authorization);
+        const token=req.headers.authorization.split(' ')[1];
+        const validatedtoken= await jwt.verify(token, process.env.JWT_SECRET);
+        console.log("token",token);
+        console.log("token",validatedtoken);
         const users = await User.find();  
         res.json({ "message": "Users fetched successfully", users });
     } catch (error) {
@@ -69,9 +75,12 @@ const login=async (req, res) => {
        {
         const data=req.body;
            const validate=await bcrypt.compare(data.password,User.password);
+           //to check if the jwt token in valid we use jwt.verify to ask the login credentials again from the user once log out that  is the token time will then be expired 
+           //token is used to check which user is active and which user is inactive 
+           
            const token=jwt.sign(
             {
-                id:User._id, emial:User.email},process.env.JWT_SECRET,{algorithm:'HS256'}
+                id:User._id, emial:User.email},process.env.JWT_SECRET,{algorithm:'HS256'}//token taken from JWT.io
            )
            if(validate)
            {
@@ -164,3 +173,9 @@ module.exports = {
     borrowed
 };
 //using $push to add and $pull to remove also new is used to update
+//session is a created through token in which we validate if user can acess 
+//cookie is a process through which we can access the data from frontend to backend 
+//make a table for session ,send id - old method
+//how to send token from postman ? go in authorization select bearertoken from authorization and paste the token recive from login and send request
+//how to get token in request server ?
+//iat- key tell at what date the token is initiated at 
