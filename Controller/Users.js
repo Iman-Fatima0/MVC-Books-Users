@@ -17,6 +17,9 @@ const addUser = async (req, res) => {
         res.status(500).send("Error creating Users");
     }
 };
+
+
+
 const getUsers = async (req, res) => {
     try {
         
@@ -66,41 +69,38 @@ const DeleteUser = async (req, res) => {
         res.status(500).send("Error Deleting Users");
     }
 };
-const login=async (req, res) => {
 
-    try{
-    const user=await User.findOne({email:req.body.email});
 
-    if(user)
-       {
-        const data=req.body;
-           const validate=await bcrypt.compare(data.password,User.password);
-           //to check if the jwt token in valid we use jwt.verify to ask the login credentials again from the user once log out that  is the token time will then be expired 
-           //token is used to check which user is active and which user is inactive 
-           
-           const token=jwt.sign(
-            {
-                id:User._id, emial:User.email},process.env.JWT_SECRET,{algorithm:'HS256'}//token taken from JWT.io
-           )
-           if(validate)
-           {
-            console.log("Successfully logged in")
-            res.status(200).send({message: "Successfully logged in"});
-           }
-           else{
-            console.log("Incorrect password")
-            res.status(401).send({message:"Invalid password"})
-           }
-       }
-
-    }
-    catch(error)
-    {
-        console.log(error)
-        res.status(500).send("Error logging in");
+    const login = async (req, res) => {
+        try {
+            const { email, password } = req.body;
     
-       }
-    }
+       
+            if (!email || !password) {
+                return res.status(400).send({ message: "Email and password are required" });
+            }
+    
+            const user = await User.findOne({ email });
+            if (!user) {
+                return res.status(404).send({ message: "User not found" });
+            }
+                const isPasswordValid = await bcrypt.compare(password, user.Password);
+            if (!isPasswordValid) {
+                return res.status(401).send({ message: "Invalid password" });
+            }
+    
+            const token = jwt.sign(
+                { id: user._id, email: user.email },  process.env.JWT_SECRET,  { algorithm: 'HS256', expiresIn: '1h' }
+            );
+    
+            res.status(200).send({   message: "Successfully logged in", token });
+        } 
+        catch (error) {
+            console.error("Error logging in:", error);
+              res.status(500).send("Error logging in");
+        }
+    };
+    
     const borrowBook = async (req, res) => {
         try {
             const { userid, bookid } = req.params;
