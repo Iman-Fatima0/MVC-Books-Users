@@ -3,7 +3,7 @@ const router = express.Router();
 const controller = require('../Controller/Users');
 const authenticationtoken=require('../middlewear/auth');
 router.post('/addUser', controller.addUser);
-router.get('/allUser',authenticationtoken, controller.getUsers);
+router.get('/allUser',authenticationtoken,controller.getUsers);
 router.get('/Users/:id', controller.searchUsers);  
 router.patch('/updateUsers/:id', authenticationtoken, controller.updateUser);  
 router.delete('/deleteUsers/:id', controller.DeleteUser); 

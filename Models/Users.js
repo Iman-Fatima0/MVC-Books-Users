@@ -15,6 +15,11 @@ required:false
     gender: String,
     Address: String,
     is_Reader: Boolean,
+    role:{
+        type:String,
+        enum:['admin','reader','writer'],
+        required:true 
+    },
     createAt:{
         type:Date,
         default:Date.now(),

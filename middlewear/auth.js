@@ -1,14 +1,23 @@
 const jwt=require('jsonwebtoken'); 
-
-const authenticationtoken=(req, res)=>
+const User = require('../Models/Users');
+require('dotenv').config();
+const authenticationtoken=(req, res,next)=>
 {
 const header=req.headers.authorization;
+// console.log(header);
 
 const token=header.split(' ')[1];
 try{
+    if(token == null)
+    {
+        return res.status(403).json({message:"Unauthorized token"});
+    }
 const verified=jwt.verify(token,process.env.JWT_SECRET);
 
 req.user=verified;
+res.status(200).json({message:"User verified"});
+
+next();//shift control from one function to another 
 }
 catch(error)
 {
