@@ -3,7 +3,7 @@ const { Schema } = mongoose;
 
 const UsersSchema = new Schema({
 
-    bookId:[{
+    books:[{
 type:mongoose.Schema.Types.ObjectId,
 ref:'Books',
 required:false
@@ -17,7 +17,7 @@ required:false
     is_Reader: Boolean,
     role:{
         type:String,
-        enum:['admin','reader','writer'],
+        enum:['user', 'admin'],
         required:true 
     },
     createAt:{
@@ -27,7 +27,8 @@ required:false
     updateAt:{
         type:Date,
         default:Date.now(),
-    }
+    },
+    OTP:{type:String, required:false}
 });
 
 const User = mongoose.model('User', UsersSchema); 

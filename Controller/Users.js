@@ -2,6 +2,8 @@ const User = require('../Models/Users');
 const jwt=require('jsonwebtoken'); 
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
+const nodemailer=require("nodemailer");
+
 require('dotenv').config();
 
 const addUser = async (req, res) => {
@@ -21,20 +23,20 @@ const addUser = async (req, res) => {
 
 
 
-const getUsers = async (req, res) => {
-    try {
-        
-        // console.log("request from postman", req.headers.authorization);
-        // const token=req.headers.authorization.split(' ')[1];
-        // const validatedtoken= await jwt.verify(token, process.env.JWT_SECRET);
-        // console.log("token",token);
-        // console.log("token",validatedtoken);
-       
-        res.json({ "message": "Users fetched successfully", users });
-    } catch (error) {
-        console.log(error);
-        res.status(500).send("Error fetching Users");
+const getUsers = async (req, res) =>{
+    try{
+        console.log(req.user);
+        const userss=await User.findById(req.user.id);
+        if(userss.role!=="admin"){
+            return res.status(403).send({ error: "You are not authorized to access this resource" });
+        }
+        const users = await User.find();  
+        res.json({ "message": "users fetched successfully", users });
     }
+    catch(error){
+        console.error(error);
+        
+}
 };
 
 const searchUsers = async (req, res) => {
@@ -73,33 +75,33 @@ const DeleteUser = async (req, res) => {
 
 
     const login = async (req, res) => {
-        try {
-            const { email, Password } = req.body;
-    
-       
-            if (!email || !Password) {
-                return res.status(400).send({ message: "Email and password are required" });
-            }
-    
-            const user = await User.findOne({ email });
-            if (!user) {
-                return res.status(404).send({ message: "User not found" });
-            }
-                const isPasswordValid = await bcrypt.compare(Password, user.Password);
-            if (!isPasswordValid) {
-                return res.status(401).send({ message: "Invalid password" });
-            }
-    
-            const token = jwt.sign(
-                { id: user._id, email: user.email },  process.env.JWT_SECRET,  { algorithm: 'HS256', expiresIn: '1h' }
-            );
-    
-            res.status(200).send({   message: "Successfully logged in", token });
-        } 
-        catch (error) {
-            console.error("Error logging in:", error);
-              res.status(500).send("Error logging in");
+      
+    try{
+        const data=await User.findOne({email:req.body.email});
+        console.log(data);
+        if(!data){
+            return res.status(404).send({ error: "user not found" });
         }
+        else{
+            console.log(req.body.Password,'user found',data.Password);
+            const validate=await bcrypt.compare(req.body.Password,data.Password);
+            if(validate)
+            {
+                const token=jwt.sign({id:data.id,role:data.role},'secret_key',{expiresIn:'2h'})
+                console.log('Login Successful');
+                res.status(200).send({message:"Login successful",token});
+            }
+            else{
+                console.log('Invalid credentials');
+                res.status(401).send("Invalid credentials");
+            
+            }
+        }
+    }
+    catch(error){
+        console.log(error);
+        res.status(500).send({ error: "Failed to login" });
+    }
     };
     const  sendEmail = async  (email,OTP)=>{
 const transporter=nodemailer.createTransport({
@@ -138,7 +140,29 @@ console.log("Message sent: %s",info);
         console.log("OTP sent sucessfully",OTP);
         res.status(200).json({message:"OTP sent successfully"});
     }
-
+    const updatepassword=async (req, res) => {
+        try{
+            const {email,otp,newPasswrod}=req.body;
+            const user=await User.findOne({email:email});
+            if(user.otp=otp)
+            {
+                const salt=10;
+                const hashedPassword=await bcrypt.hash(newPasswrod, salt);
+                user.Password=hashedPassword;
+                user.OTP=null;
+                user.OTPExpiry=null;
+                await user.save();
+                return res.status(200).json({message:"Password updated successfully"});
+            }
+            else{
+                return res.status(400).json({message:"Invalid OTP"});
+            }
+        }
+        catch(error){
+            console.error(error);
+            res.status(500).send("Error updating password");
+        }
+    }
     
     const borrowBook = async (req, res) => {
         try {
@@ -167,37 +191,66 @@ console.log("Message sent: %s",info);
     };
     const returnbook = async (req, res) => {
         try{
-                const { userid, bookid } = req.params;
-                const returned = await User.findByIdAndUpdate(
-                    userid,
-                    { $pull: { bookId: bookid } },
-                    { new: true }
-                );
-                // const returned=await User.bookid.splice(bookid,1);
-                res.status(200).json({
-                    message: "Book Returned Successfully",
-                    returned
-                });
-        }
-        catch(error)
+            const { userId,bookId } = req.params;
+            const userss = await user.findById(req.user.id);
+            if(userss.role != 'user')
+            {
+                return res.status(403).send({ error: "You are not authorized to access this resource" });
+            }
+            const user = await user.findById(userId);
+            if(!user)
+            {
+                res.status(404).send("user not Found")
+            }
+            const bookIndex=user.books.indexOf(bookId);
+            if(bookIndex === -1)
+            {
+                res.status(404).send("Book not found in the user's list");
+                return;
+            }
+            user.books.splice(bookIndex,1);
+            await user.save();
+            console.log("Book returned successfully",user);
+            res.status(200).json({message: "Book returned successfully", user});
+            }
+        
+        catch (error)
         {
-          console.error(error);
-          res.status(500).send("Error returning book");
+            console.error(error);
         }
     }
 
     const borrowed=async(req,res)=>
     {
-         try{
-            const data=req.params.userid;
-             const borrowed=await User.findById(data).populate('bookId');
-             res.status(200).json({message: "Borrowed books", borrowed});
-         }
-         catch(error)
-         {
-             console.error(error);
-             res.status(500).send("Error fetching borrowed books");
-         }
+        const {userId,bookId}=req.params;
+    const user=await user.findById(userId);
+    if(userss.role != 'user')
+        {
+            return res.status(403).send({ error: "You are not authorized to access this resource" });
+        }
+    try{
+    if(user){
+
+        if(user.books.length>=3)
+        {
+            return res.status(400).send('user can borrow only 3 books');
+        }
+        else{
+            if (user.books.includes(bookId)) {
+                return res.status(400).send("<h1>Book already borrowed</h1>");
+            }
+                user.books.push(bookId);
+                await user.save()
+                return res.status(200).json({ message: "Book borrowed successfully.",user })
+        }
+    }
+    else{
+        return res.status(400).send('user not found');
+    }}
+    catch(error){
+        console.error(error);
+        res.status(500).send(error );
+    }
     }
     
 module.exports = {
@@ -209,7 +262,10 @@ module.exports = {
     borrowBook,
     login,
     returnbook,
-    borrowed
+    borrowed,
+    passwordreset,
+    updatepassword,
+    sendEmail
 };
 //using $push to add and $pull to remove also new is used to update
 //session is a created through token in which we validate if user can acess 
@@ -219,5 +275,5 @@ module.exports = {
 //how to get token in request server ?
 //iat- key tell at what date the token is initiated at 
 //math.floor and math.ceiling and math.random used to generate the random numbers for the OTP
-//matj.ceiling will round of the number while math.floor will not round of the number
+//math.ceiling will round of the number while math.floor will not round of the number
 //nodemailer library for fasilitating sending emails

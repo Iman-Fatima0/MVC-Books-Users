@@ -19,6 +19,7 @@ res.status(200).json({message:"User verified"});
 
 next();//shift control from one function to another 
 }
+
 catch(error)
 {
     console.log("invalide token", error);
@@ -26,8 +27,19 @@ catch(error)
 
 }
 }
+function authorization(...allowedRoles)
+{
+    return(req,res,next)=>{
+    console.log('authorization',allowedRoles);
+    if(!req.user||!allowedRoles.includes(req.user.role)) 
+    {
+        return res.status(403).send({message:"forbidden"});
+    }
+    next();
+    }
+}
 
-module.exports=authenticationtoken;
+module.exports={authenticationtoken, authorization};
 //When you log in to a website, the server gives you a JWT token.
 //The token has your details, like your user ID, and is signed by the server so no one can fake it.
 //When you want to do something (like see your profile), you send the token to the server.
